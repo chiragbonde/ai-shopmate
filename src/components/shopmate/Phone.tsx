@@ -23,9 +23,7 @@ export function Phone({
         {/* Phone frame */}
         <div className="phone-shadow rounded-[44px] bg-neutral-900 p-[6px]">
           <div className="rounded-[40px] bg-neutral-950 p-[3px]">
-            <div
-              className={`relative h-[640px] w-[300px] overflow-hidden rounded-[37px] ${bg}`}
-            >
+            <div className={`relative h-[640px] w-[300px] overflow-hidden rounded-[37px] ${bg}`}>
               {/* Notch */}
               <div className="absolute left-1/2 top-2 z-30 flex h-6 w-28 -translate-x-1/2 items-center justify-end rounded-full bg-black px-3">
                 <div className="h-2 w-2 rounded-full bg-neutral-800" />
@@ -45,9 +43,7 @@ export function Phone({
       </div>
       <figcaption className="text-center">
         <div className="text-xs font-medium text-[#6C63FF]">{number}</div>
-        <div className="font-display text-sm font-semibold text-[#111827]">
-          {label}
-        </div>
+        <div className="font-display text-sm font-semibold text-[#111827]">{label}</div>
       </figcaption>
     </figure>
   );

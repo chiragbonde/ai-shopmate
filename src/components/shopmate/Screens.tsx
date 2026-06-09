@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+type SpeechRecognitionConstructor = new () => SpeechRecognition;
 import {
   Search,
   Mic,
@@ -41,7 +42,11 @@ import { StatusPad } from "./Phone";
 
 /* ───────── shared bits ───────── */
 
-function TabBar({ active = "home" }: { active?: "home" | "chat" | "wishlist" | "cart" | "profile" }) {
+function TabBar({
+  active = "home",
+}: {
+  active?: "home" | "chat" | "wishlist" | "cart" | "profile";
+}) {
   const items = [
     { id: "home", icon: Home, label: "Home" },
     { id: "chat", icon: MessageSquare, label: "AI" },
@@ -137,9 +142,7 @@ function ProductCard({
         </div>
         <div className="mt-1 flex items-baseline gap-1">
           <span className="text-xs font-bold text-[#111827]">{price}</span>
-          {old && (
-            <span className="text-[9px] text-neutral-400 line-through">{old}</span>
-          )}
+          {old && <span className="text-[9px] text-neutral-400 line-through">{old}</span>}
         </div>
       </div>
     </div>
@@ -162,9 +165,7 @@ export function Splash() {
             </span>
           </div>
         </div>
-        <h1 className="mt-7 font-display text-3xl font-extrabold tracking-tight">
-          AI ShopMate
-        </h1>
+        <h1 className="mt-7 font-display text-3xl font-extrabold tracking-tight">AI ShopMate</h1>
         <p className="mt-2 text-center text-[11px] font-medium text-white/80">
           Your intelligent shopping companion
         </p>
@@ -203,9 +204,7 @@ function OnboardFrame({
       <div className="relative mx-5 mt-2 flex-1 overflow-hidden rounded-3xl brand-gradient">
         <div className="absolute -right-10 top-10 h-40 w-40 rounded-full bg-white/20 blur-2xl" />
         <div className="absolute -left-8 bottom-10 h-32 w-32 rounded-full bg-[#00C2FF]/40 blur-2xl" />
-        <div className="relative z-10 flex h-full items-center justify-center p-6">
-          {art}
-        </div>
+        <div className="relative z-10 flex h-full items-center justify-center p-6">{art}</div>
       </div>
       <div className="px-6 pt-5">
         <div className="mb-3 flex items-center gap-1.5">
@@ -219,9 +218,7 @@ function OnboardFrame({
           ))}
         </div>
         <h3 className="text-lg font-bold leading-tight">{title}</h3>
-        <p className="mt-1.5 text-[11px] leading-relaxed text-neutral-500">
-          {body}
-        </p>
+        <p className="mt-1.5 text-[11px] leading-relaxed text-neutral-500">{body}</p>
       </div>
       <div className="flex items-center justify-between px-6 pb-8 pt-4">
         <button className="text-[11px] font-medium text-neutral-500">Back</button>
@@ -511,15 +508,18 @@ export function Chat() {
   const [isListening, setIsListening] = useState(false);
   const [voiceSupported, setVoiceSupported] = useState(true);
   const [voiceError, setVoiceError] = useState<string | null>(null);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
   const baseTranscriptRef = useRef("");
 
   useEffect(() => {
-    const SR =
-      (typeof window !== "undefined" &&
-        ((window as any).SpeechRecognition ||
-          (window as any).webkitSpeechRecognition)) ||
-      null;
+    const SR = (() => {
+      if (typeof window === "undefined") return null;
+      const win = window as unknown as {
+        SpeechRecognition?: SpeechRecognitionConstructor;
+        webkitSpeechRecognition?: SpeechRecognitionConstructor;
+      };
+      return win.SpeechRecognition || win.webkitSpeechRecognition || null;
+    })();
     if (!SR) {
       setVoiceSupported(false);
       return;
@@ -528,7 +528,7 @@ export function Chat() {
     rec.continuous = true;
     rec.interimResults = true;
     rec.lang = "en-US";
-    rec.onresult = (e: any) => {
+    rec.onresult = (e: SpeechRecognitionEvent) => {
       let interim = "";
       let finalText = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -540,7 +540,7 @@ export function Chat() {
       const combined = (baseTranscriptRef.current + interim).replace(/\s+/g, " ").trimStart();
       setComposer(combined);
     };
-    rec.onerror = (e: any) => {
+    rec.onerror = (e: SpeechRecognitionErrorEvent) => {
       setIsListening(false);
       if (e?.error === "not-allowed" || e?.error === "service-not-allowed") {
         setVoiceError("Mic permission denied");
@@ -556,7 +556,9 @@ export function Chat() {
     return () => {
       try {
         rec.stop();
-      } catch {}
+      } catch (error) {
+        console.warn("SpeechRecognition stop failed", error);
+      }
     };
   }, []);
 
@@ -570,7 +572,9 @@ export function Chat() {
     if (isListening) {
       try {
         rec.stop();
-      } catch {}
+      } catch (error) {
+        console.warn("SpeechRecognition stop failed", error);
+      }
       setIsListening(false);
       return;
     }
@@ -579,7 +583,8 @@ export function Chat() {
       rec.start();
       setIsListening(true);
       setVoiceError(null);
-    } catch {
+    } catch (error) {
+      console.warn("SpeechRecognition failed to start", error);
       setIsListening(false);
     }
   };
@@ -590,7 +595,9 @@ export function Chat() {
     if (isListening) {
       try {
         recognitionRef.current?.stop();
-      } catch {}
+      } catch (error) {
+        console.warn("SpeechRecognition stop failed", error);
+      }
       setIsListening(false);
     }
     setComposer("");
@@ -634,7 +641,7 @@ export function Chat() {
     prompt: string,
     response: string,
     nextSuggestions: string[],
-    cards?: ChatMessage["cards"]
+    cards?: ChatMessage["cards"],
   ) => {
     const userId = idRef.current++;
     setMessages((m) => [...m, { id: userId, role: "user", text: prompt }]);
@@ -765,62 +772,62 @@ export function Chat() {
                         detail: "$279 · 35h",
                         gradient: "linear-gradient(135deg,#7B61FF,#F472B6)",
                       },
-                    ]
+                    ],
                   );
                 } else if (s === "Compare them") {
                   sendPrompt(
                     s,
                     "Aura Pro wins on battery (40h vs 35h) and price ($249 vs $279). Echo X2 has slightly better ANC depth. Want me to add one to your cart?",
-                    ["Add Aura Pro", "Add Echo X2", "Show specs"]
+                    ["Add Aura Pro", "Add Echo X2", "Show specs"],
                   );
                 } else if (s === "Cheaper options") {
                   sendPrompt(
                     s,
                     "Sonic Lite at $129 is the best budget pick — 30h battery and solid ANC for the price. Bass Studio at $199 adds custom EQ.",
-                    ["Sonic Lite details", "Bass Studio details", "Back to top picks"]
+                    ["Sonic Lite details", "Bass Studio details", "Back to top picks"],
                   );
                 } else if (s === "Best for gym") {
                   sendPrompt(
                     s,
                     "Echo X2 has IP55 sweat resistance and a sport-fit band. Aura Pro is IPX4 — fine for light workouts but not heavy sweat.",
-                    ["Echo X2 details", "Show gym alternatives", "Back to top picks"]
+                    ["Echo X2 details", "Show gym alternatives", "Back to top picks"],
                   );
                 } else if (s === "Under $200?") {
                   sendPrompt(
                     s,
                     "Sonic Lite at $129 and Bass Studio at $199 are both great under $200. Sonic Lite is lighter; Bass Studio has richer bass.",
-                    ["Sonic Lite details", "Bass Studio details", "Back to top picks"]
+                    ["Sonic Lite details", "Bass Studio details", "Back to top picks"],
                   );
                 } else if (s === "Best for travel") {
                   sendPrompt(
                     s,
                     "Aura Pro is best for travel — 40h battery, premium ANC, and it folds flat into the included hard case.",
-                    ["Aura Pro details", "Travel accessories", "Back to top picks"]
+                    ["Aura Pro details", "Travel accessories", "Back to top picks"],
                   );
                 } else if (s === "Add Aura Pro") {
                   sendPrompt(
                     s,
                     "Added Aura Pro to your cart ✅ Total is now $249 + free shipping.",
-                    ["Go to checkout", "Keep browsing", "View cart"]
+                    ["Go to checkout", "Keep browsing", "View cart"],
                   );
                 } else if (s === "Add Echo X2") {
                   sendPrompt(
                     s,
                     "Added Echo X2 to your cart ✅ Total is now $279 + free shipping.",
-                    ["Go to checkout", "Keep browsing", "View cart"]
+                    ["Go to checkout", "Keep browsing", "View cart"],
                   );
                 } else if (s === "Go to checkout") {
                   sendPrompt(
                     s,
                     "Taking you to checkout… you can review your address and payment there.",
-                    ["Keep browsing", "View cart", "Home"]
+                    ["Keep browsing", "View cart", "Home"],
                   );
                 } else {
-                  sendPrompt(
-                    s,
-                    `I can help with "${s}". Let me know what else you need!`,
-                    ["Compare them", "Cheaper options", "Best for gym"]
-                  );
+                  sendPrompt(s, `I can help with "${s}". Let me know what else you need!`, [
+                    "Compare them",
+                    "Cheaper options",
+                    "Best for gym",
+                  ]);
                 }
               }}
               className="shrink-0 rounded-full border border-[#6C63FF]/30 bg-white px-2.5 py-1 text-[9px] font-medium text-[#6C63FF] transition-transform active:scale-95"
@@ -879,9 +886,7 @@ export function Chat() {
             aria-label={isListening ? "Stop voice input" : "Start voice input"}
             disabled={!voiceSupported}
             className={`relative grid h-8 w-8 place-items-center rounded-xl transition-colors ${
-              isListening
-                ? "bg-rose-500 text-white"
-                : "bg-neutral-100 text-neutral-600"
+              isListening ? "bg-rose-500 text-white" : "bg-neutral-100 text-neutral-600"
             } ${!voiceSupported ? "opacity-40" : ""}`}
           >
             {isListening && (
@@ -988,8 +993,19 @@ export function Listing() {
       </div>
       <div className="mt-3 space-y-2.5 px-5">
         {[
-          { n: "Aura Pro ANC", p: "$249", o: "$329", b: "AI pick", g: "linear-gradient(135deg,#6C63FF,#00C2FF)" },
-          { n: "Echo X2 Wireless", p: "$279", b: "Trending", g: "linear-gradient(135deg,#7B61FF,#F472B6)" },
+          {
+            n: "Aura Pro ANC",
+            p: "$249",
+            o: "$329",
+            b: "AI pick",
+            g: "linear-gradient(135deg,#6C63FF,#00C2FF)",
+          },
+          {
+            n: "Echo X2 Wireless",
+            p: "$279",
+            b: "Trending",
+            g: "linear-gradient(135deg,#7B61FF,#F472B6)",
+          },
           { n: "Sonic Lite Buds", p: "$129", g: "linear-gradient(135deg,#10B981,#06B6D4)" },
         ].map((p) => (
           <div key={p.n} className="flex gap-3 rounded-2xl bg-white p-2.5 shadow-sm">
@@ -1017,9 +1033,7 @@ export function Listing() {
               <div className="flex items-center justify-between">
                 <div className="flex items-baseline gap-1">
                   <span className="text-sm font-bold">{p.p}</span>
-                  {p.o && (
-                    <span className="text-[9px] text-neutral-400 line-through">{p.o}</span>
-                  )}
+                  {p.o && <span className="text-[9px] text-neutral-400 line-through">{p.o}</span>}
                 </div>
                 <button className="grid h-7 w-7 place-items-center rounded-lg brand-gradient text-white">
                   <Plus className="h-3.5 w-3.5" />
@@ -1048,7 +1062,10 @@ export function Details() {
           </button>
         </div>
         <div className="flex h-full items-center justify-center">
-          <Headphones className="h-32 w-32 text-white drop-shadow-2xl animate-float-slow" strokeWidth={1.2} />
+          <Headphones
+            className="h-32 w-32 text-white drop-shadow-2xl animate-float-slow"
+            strokeWidth={1.2}
+          />
         </div>
         <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1">
           {[0, 1, 2, 3].map((i) => (
@@ -1080,8 +1097,8 @@ export function Details() {
             <Sparkles className="h-3 w-3" /> AI SUMMARY
           </div>
           <p className="mt-1 text-[11px] leading-relaxed text-neutral-700">
-            Premium ANC, 40h battery, ultra-light. Loved by travelers. Better
-            value than 87% of similar models.
+            Premium ANC, 40h battery, ultra-light. Loved by travelers. Better value than 87% of
+            similar models.
           </p>
         </div>
 
@@ -1094,7 +1111,10 @@ export function Details() {
                 i === 1 ? "ring-[#6C63FF]" : "ring-transparent"
               }`}
             >
-              <span className="h-5 w-5 rounded-full border border-neutral-200" style={{ background: c }} />
+              <span
+                className="h-5 w-5 rounded-full border border-neutral-200"
+                style={{ background: c }}
+              />
             </span>
           ))}
         </div>
@@ -1152,7 +1172,9 @@ export function Compare() {
           {features.map(([k, a, b], i) => (
             <div key={k} className="grid grid-cols-3 py-2 text-[11px]">
               <span className="text-neutral-500">{k}</span>
-              <span className={`text-center font-semibold ${i === 0 ? "text-[#6C63FF]" : ""}`}>{a}</span>
+              <span className={`text-center font-semibold ${i === 0 ? "text-[#6C63FF]" : ""}`}>
+                {a}
+              </span>
               <span className="text-center text-neutral-700">{b}</span>
             </div>
           ))}
@@ -1179,10 +1201,30 @@ export function Wishlist() {
       <StatusPad />
       <TopBar title="Wishlist" back={false} />
       <div className="grid grid-cols-2 gap-2.5 px-5">
-        <ProductCard name="Aura Pro" price="$249" gradient="linear-gradient(135deg,#6C63FF,#00C2FF)" icon={Headphones} />
-        <ProductCard name="Nova S3" price="$189" gradient="linear-gradient(135deg,#7B61FF,#F472B6)" icon={Watch} />
-        <ProductCard name="Linen Tee" price="$42" gradient="linear-gradient(135deg,#F59E0B,#EF4444)" icon={Shirt} />
-        <ProductCard name="Mini Phone" price="$899" gradient="linear-gradient(135deg,#0EA5E9,#6366F1)" icon={Smartphone} />
+        <ProductCard
+          name="Aura Pro"
+          price="$249"
+          gradient="linear-gradient(135deg,#6C63FF,#00C2FF)"
+          icon={Headphones}
+        />
+        <ProductCard
+          name="Nova S3"
+          price="$189"
+          gradient="linear-gradient(135deg,#7B61FF,#F472B6)"
+          icon={Watch}
+        />
+        <ProductCard
+          name="Linen Tee"
+          price="$42"
+          gradient="linear-gradient(135deg,#F59E0B,#EF4444)"
+          icon={Shirt}
+        />
+        <ProductCard
+          name="Mini Phone"
+          price="$899"
+          gradient="linear-gradient(135deg,#0EA5E9,#6366F1)"
+          icon={Smartphone}
+        />
       </div>
       <div className="mx-5 mt-3 rounded-2xl border border-[#6C63FF]/20 bg-white p-3">
         <div className="flex items-center gap-1 text-[10px] font-bold text-[#6C63FF]">
@@ -1210,7 +1252,10 @@ export function Cart() {
       <div className="space-y-2 px-5">
         {items.map((it) => (
           <div key={it.n} className="flex items-center gap-3 rounded-2xl bg-white p-2.5 shadow-sm">
-            <div className="grid h-14 w-14 place-items-center rounded-xl" style={{ backgroundImage: it.g }}>
+            <div
+              className="grid h-14 w-14 place-items-center rounded-xl"
+              style={{ backgroundImage: it.g }}
+            >
               <it.i className="h-7 w-7 text-white" strokeWidth={1.5} />
             </div>
             <div className="flex-1">
@@ -1240,13 +1285,16 @@ export function Cart() {
 
       <div className="mx-5 mt-3 rounded-2xl bg-white p-3 shadow-sm">
         <div className="flex justify-between text-[11px] text-neutral-500">
-          <span>Subtotal</span><span>$438</span>
+          <span>Subtotal</span>
+          <span>$438</span>
         </div>
         <div className="flex justify-between text-[11px] text-neutral-500">
-          <span>AI savings</span><span className="text-emerald-600">-$32</span>
+          <span>AI savings</span>
+          <span className="text-emerald-600">-$32</span>
         </div>
         <div className="mt-1 flex justify-between text-sm font-bold">
-          <span>Total</span><span>$406</span>
+          <span>Total</span>
+          <span>$406</span>
         </div>
       </div>
 
@@ -1290,10 +1338,22 @@ export function Checkout() {
 
         <div className="rounded-2xl bg-white p-3 shadow-sm">
           <div className="text-[10px] font-bold uppercase text-neutral-500">Order summary</div>
-          <div className="mt-1.5 flex justify-between text-[11px]"><span>2 items</span><span>$438</span></div>
-          <div className="flex justify-between text-[11px]"><span>Shipping</span><span className="text-emerald-600">Free</span></div>
-          <div className="flex justify-between text-[11px]"><span>AI savings</span><span className="text-emerald-600">-$32</span></div>
-          <div className="mt-1 flex justify-between text-sm font-bold"><span>Total</span><span>$406</span></div>
+          <div className="mt-1.5 flex justify-between text-[11px]">
+            <span>2 items</span>
+            <span>$438</span>
+          </div>
+          <div className="flex justify-between text-[11px]">
+            <span>Shipping</span>
+            <span className="text-emerald-600">Free</span>
+          </div>
+          <div className="flex justify-between text-[11px]">
+            <span>AI savings</span>
+            <span className="text-emerald-600">-$32</span>
+          </div>
+          <div className="mt-1 flex justify-between text-sm font-bold">
+            <span>Total</span>
+            <span>$406</span>
+          </div>
         </div>
 
         <div className="flex items-start gap-2 rounded-2xl border border-[#6C63FF]/20 bg-white p-3">
@@ -1351,7 +1411,9 @@ export function Tracking() {
               }`}
             >
               <s.i className="h-3.5 w-3.5" />
-              {s.active && <span className="absolute inset-0 animate-pulse-ring rounded-full bg-[#6C63FF]/40" />}
+              {s.active && (
+                <span className="absolute inset-0 animate-pulse-ring rounded-full bg-[#6C63FF]/40" />
+              )}
             </div>
             <div>
               <div className={`text-[11px] font-semibold ${s.done ? "" : "text-neutral-400"}`}>
@@ -1481,9 +1543,7 @@ export function SettingsScreen() {
                       }`}
                     >
                       <span
-                        className={`h-4 w-4 rounded-full bg-white shadow ${
-                          it.on ? "ml-auto" : ""
-                        }`}
+                        className={`h-4 w-4 rounded-full bg-white shadow ${it.on ? "ml-auto" : ""}`}
                       />
                     </span>
                   ) : (

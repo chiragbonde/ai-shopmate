@@ -77,9 +77,8 @@ function Index() {
             AI <span className="italic font-light">ShopMate</span>
           </h1>
           <p className="mt-4 max-w-xl text-base text-white/85 md:text-lg">
-            A conversational shopping assistant that learns your style, compares
-            products and finds the smartest deals — Amazon × ChatGPT, redesigned
-            for 2026.
+            A conversational shopping assistant that learns your style, compares products and finds
+            the smartest deals — Amazon × ChatGPT, redesigned for 2026.
           </p>
           <div className="mt-8 flex flex-wrap gap-6 text-sm">
             {[
@@ -100,9 +99,21 @@ function Index() {
       {/* Featured hero phones */}
       <section className="relative -mt-16 px-6 pb-20">
         <div className="mx-auto grid max-w-6xl grid-cols-1 justify-items-center gap-12 md:grid-cols-3">
-          <div className="md:translate-y-8"><Phone label={screens[5].l} number={screens[5].n}>{screens[5].c}</Phone></div>
-          <div><Phone label={screens[6].l} number={screens[6].n}>{screens[6].c}</Phone></div>
-          <div className="md:translate-y-8"><Phone label={screens[9].l} number={screens[9].n}>{screens[9].c}</Phone></div>
+          <div className="md:translate-y-8">
+            <Phone label={screens[5].l} number={screens[5].n}>
+              {screens[5].c}
+            </Phone>
+          </div>
+          <div>
+            <Phone label={screens[6].l} number={screens[6].n}>
+              {screens[6].c}
+            </Phone>
+          </div>
+          <div className="md:translate-y-8">
+            <Phone label={screens[9].l} number={screens[9].n}>
+              {screens[9].c}
+            </Phone>
+          </div>
         </div>
       </section>
 
@@ -121,8 +132,8 @@ function Index() {
             </h2>
           </div>
           <p className="hidden max-w-sm text-sm text-neutral-500 md:block">
-            From first launch to settings — every surface designed with the
-            same AI-forward language.
+            From first launch to settings — every surface designed with the same AI-forward
+            language.
           </p>
         </div>
         <div className="grid grid-cols-1 justify-items-center gap-x-8 gap-y-16 sm:grid-cols-2 lg:grid-cols-3">
@@ -148,9 +159,7 @@ function DesignSystem() {
         <div className="text-xs font-semibold uppercase tracking-widest text-[#6C63FF]">
           Design System
         </div>
-        <h2 className="mt-2 font-display text-4xl font-bold md:text-5xl">
-          The foundations
-        </h2>
+        <h2 className="mt-2 font-display text-4xl font-bold md:text-5xl">The foundations</h2>
 
         {/* Colors */}
         <div className="mt-12 grid gap-6 md:grid-cols-4">
